@@ -5,7 +5,10 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.EditText;
 
+import com.alibaba.fastjson.JSON;
+
 import sembarang.userprofileapp.model.UserModel;
+import sembarang.userprofileapp.util.PreferencesManager;
 
 /**
  * @author hendrawd on 13/05/18
@@ -16,7 +19,12 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        UserModel currentUser = getIntent().getParcelableExtra("user");
+        String userJsonObject = PreferencesManager.getString(
+                this,
+                Global.SHARED_PREFERENCES_KEY_USER,
+                ""
+        );
+        UserModel currentUser = JSON.parseObject(userJsonObject, UserModel.class);
 
         EditText etName = findViewById(R.id.et_name);
         EditText etDescription = findViewById(R.id.et_description);

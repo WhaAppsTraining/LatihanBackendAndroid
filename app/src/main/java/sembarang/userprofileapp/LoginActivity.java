@@ -23,7 +23,7 @@ import com.alibaba.fastjson.JSON;
 
 import okhttp3.FormBody;
 import sembarang.userprofileapp.model.LoginResponse;
-import sembarang.userprofileapp.model.UserModel;
+import sembarang.userprofileapp.util.PreferencesManager;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -143,7 +143,6 @@ public class LoginActivity extends AppCompatActivity {
         private final String mUsername;
         private final String mPassword;
         private String errorMessage = "";
-        private UserModel user;
 
         UserLoginTask(String username, String password) {
             mUsername = username;
@@ -165,7 +164,11 @@ public class LoginActivity extends AppCompatActivity {
                     JSON.parseObject(response, LoginResponse.class);
 
             if (loginResponse.status.equals("success")) {
-                user = loginResponse.user;
+                PreferencesManager.putString(
+                        LoginActivity.this,
+                        Global.SHARED_PREFERENCES_KEY_USER,
+                        JSON.toJSONString(loginResponse.user)
+                );
                 return true;
             }
             return false;
@@ -181,7 +184,6 @@ public class LoginActivity extends AppCompatActivity {
                         LoginActivity.this,
                         ProfileActivity.class
                 );
-                intent.putExtra("user", user);
                 startActivity(intent);
                 finish();
             } else {
