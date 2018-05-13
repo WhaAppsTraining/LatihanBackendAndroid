@@ -3,6 +3,7 @@ package sembarang.userprofileapp;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,10 +19,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSON;
 
 import okhttp3.FormBody;
+import sembarang.userprofileapp.model.LoginResponse;
+import sembarang.userprofileapp.model.UserModel;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -141,6 +143,7 @@ public class LoginActivity extends AppCompatActivity {
         private final String mUsername;
         private final String mPassword;
         private String errorMessage = "";
+        private UserModel user;
 
         UserLoginTask(String username, String password) {
             mUsername = username;
@@ -154,22 +157,16 @@ public class LoginActivity extends AppCompatActivity {
             builder.add("username", mUsername);
             builder.add("password", mPassword);
 
-            String response = RequestHelper.postData(LOGIN_URL, builder.build());
-            // BaseResponse baseResponse = JSON.parseObject(response, BaseResponse.class);
-            try {
-                JSONObject responseJsonObject = new JSONObject(response);
-                if (responseJsonObject.has("status")) {
-                    String status = responseJsonObject.getString("status");
-                    if (status.equals("success")) {
-                        return true;
-                    } else if (status.equals("failed")) {
-                        errorMessage = responseJsonObject.getString("message");
-                        return false;
-                    }
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                errorMessage = "JSON error";
+            String response = RequestHelper.postData(
+                    LOGIN_URL,
+                    builder.build()
+            );
+            final LoginResponse loginResponse =
+                    JSON.parseObject(response, LoginResponse.class);
+
+            if (loginResponse.status.equals("success")) {
+                user = loginResponse.user;
+                return true;
             }
             return false;
         }
@@ -180,6 +177,12 @@ public class LoginActivity extends AppCompatActivity {
             showProgress(false);
 
             if (success) {
+                Intent intent = new Intent(
+                        LoginActivity.this,
+                        ProfileActivity.class
+                );
+                intent.putExtra("user", user);
+                startActivity(intent);
                 finish();
             } else {
                 Toast.makeText(

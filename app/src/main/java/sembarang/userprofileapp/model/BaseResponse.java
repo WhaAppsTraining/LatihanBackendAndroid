@@ -1,4 +1,4 @@
-package sembarang.userprofileapp;
+package sembarang.userprofileapp.model;
 
 /**
  * @author hendrawd on 13/05/18
