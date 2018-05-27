@@ -7,6 +7,7 @@ import android.widget.EditText;
 
 import com.alibaba.fastjson.JSON;
 
+import sembarang.userprofileapp.global.Global;
 import sembarang.userprofileapp.model.UserModel;
 import sembarang.userprofileapp.util.PreferencesManager;
 

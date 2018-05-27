@@ -1,4 +1,4 @@
-package sembarang.userprofileapp;
+package sembarang.userprofileapp.global;
 
 /**
  * @author hendrawd on 13/05/18

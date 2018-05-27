@@ -21,13 +21,16 @@ import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 
+import java.lang.ref.WeakReference;
+
 import okhttp3.FormBody;
+import sembarang.userprofileapp.global.Global;
+import sembarang.userprofileapp.global.Url;
 import sembarang.userprofileapp.model.LoginResponse;
 import sembarang.userprofileapp.util.PreferencesManager;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String LOGIN_URL = "http://backend.192.168.1.55.xip.io/read_user.php";
     private UserLoginTask mAuthTask = null;
     // UI references.
     private AutoCompleteTextView mUsernameView;
@@ -102,7 +105,7 @@ public class LoginActivity extends AppCompatActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(username, password);
+            mAuthTask = new UserLoginTask(this, username, password);
             mAuthTask.execute((Void) null);
         }
     }
@@ -138,13 +141,20 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    public void openResetPasswordScreen(View view) {
+        Intent intent = new Intent(this, ResetPasswordActivity.class);
+        startActivity(intent);
+    }
 
-        private final String mUsername;
-        private final String mPassword;
+    public static class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+
+        private String mUsername;
+        private String mPassword;
         private String errorMessage = "";
+        private WeakReference<LoginActivity> loginActivityWeakReference;
 
-        UserLoginTask(String username, String password) {
+        UserLoginTask(LoginActivity loginActivity, String username, String password) {
+            loginActivityWeakReference = new WeakReference<>(loginActivity);
             mUsername = username;
             mPassword = password;
         }
@@ -157,38 +167,54 @@ public class LoginActivity extends AppCompatActivity {
             builder.add("password", mPassword);
 
             String response = RequestHelper.postData(
-                    LOGIN_URL,
+                    Url.LOGIN,
                     builder.build()
             );
             final LoginResponse loginResponse =
                     JSON.parseObject(response, LoginResponse.class);
 
-            if (loginResponse.status.equals("success")) {
-                PreferencesManager.putString(
-                        LoginActivity.this,
-                        Global.SHARED_PREFERENCES_KEY_USER,
-                        JSON.toJSONString(loginResponse.user)
-                );
-                return true;
+            if (loginResponse == null) {
+                errorMessage = "Response tidak valid";
+                return false;
+            }
+
+            LoginActivity loginActivity =
+                    loginActivityWeakReference.get();
+            if (loginActivity != null) {
+                if (loginResponse.status.equals("success")) {
+                    PreferencesManager.putString(
+                            loginActivity,
+                            Global.SHARED_PREFERENCES_KEY_USER,
+                            JSON.toJSONString(loginResponse.user)
+                    );
+                    return true;
+                } else {
+                    errorMessage = loginResponse.message;
+                }
             }
             return false;
         }
 
         @Override
         protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
-            showProgress(false);
+            LoginActivity loginActivity =
+                    loginActivityWeakReference.get();
+            if (loginActivity == null) {
+                return;
+            }
+            loginActivity.mAuthTask = null;
+            loginActivity.showProgress(false);
 
             if (success) {
                 Intent intent = new Intent(
-                        LoginActivity.this,
+                        loginActivity,
                         ProfileActivity.class
                 );
-                startActivity(intent);
-                finish();
+                loginActivity.startActivity(intent);
+                loginActivity.finish();
             } else {
                 Toast.makeText(
-                        LoginActivity.this,
+                        loginActivity,
                         errorMessage,
                         Toast.LENGTH_LONG
                 ).show();
@@ -197,8 +223,13 @@ public class LoginActivity extends AppCompatActivity {
 
         @Override
         protected void onCancelled() {
-            mAuthTask = null;
-            showProgress(false);
+            LoginActivity loginActivity =
+                    loginActivityWeakReference.get();
+            if (loginActivity == null) {
+                return;
+            }
+            loginActivity.mAuthTask = null;
+            loginActivity.showProgress(false);
         }
     }
 }
